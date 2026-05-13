@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Fire Fall</title>
+	<link rel="stylesheet" href="flowerWizard.css">
+	<!-- Add favicon -->
+	<link rel="icon" type="image/png" href="Sprites/FlowerHead.png">
+</head>
+<body style="margin:0; padding:0;">
+	<canvas id="gameCanvas" width="1500" height="900"></canvas>
+	<div id="StartScreen" style="
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100vw;
+		height: 100vh;
+		background: url('Sprites/startScreen.png') center center / cover no-repeat;
+		z-index: 10;
+	">
+		<!-- Title above buttons -->
+		<h1 style="
+			font-size: 13rem;
+			font-family: 'Arial Black', Arial, sans-serif;
+			text-align: center;
+			margin-bottom: 5rem;
+			margin-top: 1rem;
+			letter-spacing: 2px;
+		">
+			<span style="color: #e53935; -webkit-text-stroke: 2px black; text-shadow: 2px 2px 0 #000, -2px 2px 0 #000, 2px -2px 0 #000, -2px -2px 0 #000;">Fire</span>
+			<span style="color: #1ec41e; -webkit-text-stroke: 2px black; text-shadow: 2px 2px 0 #000, -2px 2px 0 #000, 2px -2px 0 #000, -2px -2px 0 #000;">Fall</span>
+		</h1>
+		<div class="start-actions">
+			<button id="start-btn">Play</button>
+			<button id="howto-btn">How to Play</button>
+		</div>
+	</div>
+
+	<div id="howto-overlay" class="howto-overlay">
+		<div class="howto-card">
+			<div class="howto-header">
+				<h2>How to Play</h2>
+				<button id="howto-close">×</button>
+			</div>
+			<div class="howto-tabs">
+				<button class="howto-tab active" data-tab="controls">1. Controls</button>
+				<button class="howto-tab" data-tab="health">2. Health</button>
+				<button class="howto-tab" data-tab="upgrades">3. Upgrades</button>
+				<button class="howto-tab" data-tab="orb">4. Player & Orb</button>
+			</div>
+			<div class="howto-content" id="howto-contents">
+				<div class="howto-panel active" id="tab-controls">
+					<h3>Controls</h3>
+					<ul>
+						<li><strong>WASD / Arrow keys</strong> move your clover around the battlefield.</li>
+						<li><strong>Click</strong> to fire the beam from your orb.</li>
+						<li><strong>Double-tap</strong> a direction to dash quickly.</li>
+						<li><strong>Skip</strong> or choose upgrades between rounds to stay alive.</li>
+					</ul>
+				</div>
+				<div class="howto-panel" id="tab-health">
+					<h3>Health</h3>
+					<p>Your health is split into two bars:</p>
+					<ul>
+						<li><strong>Player HP</strong>: your own life. If the green bar reaches 0, you lose.</li>
+						<li><strong>World HP</strong>: the realm's life. When fire reaches your forest and the red bar reaches 0, the world is destroyed.</li>
+					</ul>
+					<p>Upgrades can heal both you and the world, but only you will ever lose HP from enemy hits.</p>
+				</div>
+				<div class="howto-panel" id="tab-upgrades">
+					<h3>Upgrades</h3>
+					<p>Between rounds you pick cards that boost your abilities. Choose carefully to shape your clover’s strengths.</p>
+					<ul>
+						<li><strong>Upgrades</strong> can increase damage, range, speed, dash cooldown, or health.</li>
+						<li>Some upgrades come with a tradeoff, like less range, slower speed, or reduced health.</li>
+						<li>Health upgrades heal both you and the world, while negative HP effects only hurt your player.</li>
+						<li>When you pick a card, it becomes stronger and the other choices disappear.</li>
+					</ul>
+				</div>
+				<div class="howto-panel" id="tab-orb">
+					<h3>Player & Orb</h3>
+					<p>Your clover controls the orb. When the orb shoots, it creates a glowing beam from its center.</p>
+					<ul>
+						<li>The orb sits near you and visually charges as it fires.</li>
+						<li>Keep moving while shooting to dodge incoming enemies.</li>
+						<li>The orb and beam look sharp and bright — they are your core power.</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="gameover-overlay" class="gameover-overlay" style="
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100vw;
+		height: 100vh;
+		background: url('Sprites/endScreen.png') center center / cover no-repeat;
+		z-index: 20;
+	">
+		<div class="gameover-card">
+			<h2 id="gameover-title">GAME OVER</h2>
+			<p id="gameover-message"></p>
+			<p id="gameover-round"></p>
+			<button id="gameover-restart">Restart</button>
+		</div>
+	</div>
+
+	<script src="flowerWizard.js"></script>
+</body>
+</html>
