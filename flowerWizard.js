@@ -41,7 +41,6 @@ const sounds = {
   upgradeCard: new Audio("Sounds/Upgrade_Card_Collect.wav"),
 };
 
-// Loop the flame ambient sounds
 sounds.redFlame.loop    = true;
 sounds.greenFlame.loop  = true;
 sounds.purpleFlame.loop = true;
@@ -59,24 +58,30 @@ function getFlameSound(round) {
 }
 
 function updateFlameAmbience(round) {
-  const next = getFlameSound(round);
-  if (next === currentFlameSound) return;
-
-// Stop flame ambience during upgrade screen
-  if (currentFlameSound) {
-    currentFlameSound.pause();
-    currentFlameSound.currentTime = 0;
-  }
-  currentFlameSound = next;
-  currentFlameSound.volume = 0.4;
-  currentFlameSound.play().catch(() => {});
+  try {
+    const next = getFlameSound(round);
+    if (next === currentFlameSound) return;
+    if (currentFlameSound) {
+      currentFlameSound.pause();
+      currentFlameSound.currentTime = 0;
+    }
+    currentFlameSound = next;
+    currentFlameSound.volume = 0.4;
+    currentFlameSound.play().catch(() => {});
+  } catch(e) {}
 }
 
 function playSound(sound, volume = 1.0) {
-  const s = sound.cloneNode ? sound.cloneNode() : sound;
-  s.volume = volume;
-  s.play().catch(() => {});
+  try {
+    const s = new Audio(sound.src);
+    s.volume = volume;
+    s.play().catch(() => {});
+  } catch(e) {}
 }
+
+// ============================================================
+//  START SCREEN & UI
+// ============================================================
 
 const startScreen = document.getElementById("StartScreen");
 const startBtn = document.getElementById("start-btn");
@@ -115,8 +120,12 @@ document.querySelectorAll(".howto-tab").forEach((button) => {
 });
 
 document.getElementById("gameover-restart").addEventListener("click", () => {
-  location.reload();
+  window.location.href = window.location.href.split('?')[0] + '?r=' + Date.now();
 });
+
+// ============================================================
+//  GAME STATE
+// ============================================================
 
 let world = { health: 5 };
 
@@ -218,10 +227,10 @@ function updateAndDrawParticles() {
     p.life -= p.decay;
     if (p.life <= 0) { particles.splice(i, 1); continue; }
     gameCtx.save();
-    gameCtx.globalAlpha = p.life;
+    gameCtx.globalAlpha = Math.max(0, p.life);
     gameCtx.fillStyle = p.color;
     gameCtx.beginPath();
-    gameCtx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+    gameCtx.arc(p.x, p.y, Math.max(0.1, p.size * p.life), 0, Math.PI * 2);
     gameCtx.fill();
     gameCtx.restore();
   }
@@ -234,7 +243,7 @@ function updateAndDrawHitEffects() {
     h.life -= h.decay;
     if (h.life <= 0) { hitEffects.splice(i, 1); continue; }
     gameCtx.save();
-    gameCtx.globalAlpha = h.life;
+    gameCtx.globalAlpha = Math.max(0, h.life);
     gameCtx.textAlign = "center";
     gameCtx.font = `bold ${14 + Math.floor((1 - h.life) * 6)}px sans-serif`;
     gameCtx.strokeStyle = "#000000";
@@ -252,15 +261,12 @@ function drawEnemyHealthBar(enemy) {
   const barX = enemy.x;
   const barY = enemy.y - 10;
   const hpPercent = Math.max(0, enemy.health / enemy.maxHealth);
-
   gameCtx.fillStyle = "#333333";
   gameCtx.fillRect(barX, barY, barW, barH);
-
   const r = Math.floor(255 * (1 - hpPercent));
   const g = Math.floor(255 * hpPercent);
   gameCtx.fillStyle = `rgb(${r},${g},0)`;
   gameCtx.fillRect(barX, barY, barW * hpPercent, barH);
-
   gameCtx.strokeStyle = "#000000";
   gameCtx.lineWidth = 1;
   gameCtx.strokeRect(barX, barY, barW, barH);
@@ -307,15 +313,15 @@ const UPGRADE_POOL = [
   },
   {
     id: "rng_dmg",
-    buff:   { label: "Range +30%",   emoji: "🏹", key: "maxBeamRange",  mult: 1.30 },
-    debuff: { label: "Damage -10%",  emoji: "⚔️", key: "streamDamage",  mult: 0.90 },
+    buff:   { label: "Range +30%",  emoji: "🏹", key: "maxBeamRange",  mult: 1.30 },
+    debuff: { label: "Damage -10%", emoji: "⚔️", key: "streamDamage",  mult: 0.90 },
     losesHp: false, title: "Long Reach",
     desc: "Extend your beam — but dilute its punch.",
   },
   {
     id: "rng_spd",
-    buff:   { label: "Range +30%",  emoji: "🏹", key: "maxBeamRange", mult: 1.30 },
-    debuff: { label: "Speed -10%",  emoji: "👟", key: "speed",        mult: 0.90 },
+    buff:   { label: "Range +30%", emoji: "🏹", key: "maxBeamRange", mult: 1.30 },
+    debuff: { label: "Speed -10%", emoji: "👟", key: "speed",        mult: 0.90 },
     losesHp: false, title: "Rooted Focus",
     desc: "A longer beam anchors your feet.",
   },
@@ -409,22 +415,22 @@ const UPGRADE_POOL = [
   },
   {
     id: "hp_dmg",
-    buff:   { label: "Gain 1 HP",   emoji: "❤️", key: "health",       delta: +1  },
-    debuff: { label: "Damage -5%",  emoji: "⚔️", key: "streamDamage", mult: 0.95 },
+    buff:   { label: "Gain 1 HP",  emoji: "❤️", key: "health",       delta: +1  },
+    debuff: { label: "Damage -5%", emoji: "⚔️", key: "streamDamage", mult: 0.95 },
     losesHp: false, title: "Fortified",
     desc: "Extra life, softer strikes.",
   },
   {
     id: "hp_rng",
-    buff:   { label: "Gain 1 HP",  emoji: "❤️", key: "health",       delta: +1  },
-    debuff: { label: "Range -5%",  emoji: "🏹", key: "maxBeamRange", mult: 0.95 },
+    buff:   { label: "Gain 1 HP", emoji: "❤️", key: "health",       delta: +1  },
+    debuff: { label: "Range -5%", emoji: "🏹", key: "maxBeamRange", mult: 0.95 },
     losesHp: false, title: "Resilient",
     desc: "More life, shorter beam.",
   },
   {
     id: "hp_spd",
-    buff:   { label: "Gain 1 HP",  emoji: "❤️", key: "health", delta: +1  },
-    debuff: { label: "Speed -5%",  emoji: "👟", key: "speed",  mult: 0.95 },
+    buff:   { label: "Gain 1 HP", emoji: "❤️", key: "health", delta: +1  },
+    debuff: { label: "Speed -5%", emoji: "👟", key: "speed",  mult: 0.95 },
     losesHp: false, title: "Tanky",
     desc: "Bulkier — but slower to boot.",
   },
@@ -688,36 +694,29 @@ function animateSkipUpgrade() {
 function buildUpgradeCard(upgrade) {
   const card = document.createElement("div");
   card.className = "upg-card";
-
   const bg = document.createElement("img");
   bg.className = "upg-card-bg";
   bg.src = "Sprites/Upgrade/slab.png";
   bg.alt = "";
   card.appendChild(bg);
-
   const inner = document.createElement("div");
   inner.className = "upg-card-inner";
-
   const icon = document.createElement("div");
   icon.className = "upg-card-icon";
   icon.textContent = upgrade.buff.emoji;
   inner.appendChild(icon);
-
   const title = document.createElement("div");
   title.className = "upg-card-title";
   title.textContent = upgrade.title;
   inner.appendChild(title);
-
   const desc = document.createElement("div");
   desc.className = "upg-card-desc";
   desc.textContent = upgrade.desc;
   inner.appendChild(desc);
-
   const buffRow = document.createElement("div");
   buffRow.className = "upg-stat buff";
   buffRow.innerHTML = `<span class="upg-stat-icon">${upgrade.buff.emoji}</span> ${upgrade.buff.label}`;
   inner.appendChild(buffRow);
-
   if (upgrade.debuff) {
     const debuffRow = document.createElement("div");
     debuffRow.className = "upg-stat debuff";
@@ -736,7 +735,6 @@ function buildUpgradeCard(upgrade) {
     freeRow.textContent = "✨ No drawback";
     inner.appendChild(freeRow);
   }
-
   card.appendChild(inner);
   return card;
 }
@@ -744,14 +742,6 @@ function buildUpgradeCard(upgrade) {
 function showUpgradeScreen() {
   const overlay = document.getElementById("upgrade-overlay");
   if (!overlay) return;
-
-  // Stop flame ambience during upgrade screen
-  if (currentFlameSound) {
-    currentFlameSound.pause();
-    currentFlameSound.currentTime = 0;
-    currentFlameSound = null; // clear so updateFlameAmbience restarts it fresh
-  }
-
 
   playSound(sounds.levelUp, 0.9);
 
@@ -837,7 +827,6 @@ function startRound(round) {
   roundAnnouncementAlpha = 1.0;
   roundAnnouncementTimer = 180;
 
-  // Start the correct flame ambience for this round
   updateFlameAmbience(round);
 
   if (spawnIntervalId) clearInterval(spawnIntervalId);
@@ -864,7 +853,8 @@ function spawnRoundEnemy() {
   enemies.push({
     x: Math.random() * (gameCanvas.width - 100) + 50,
     y: -256, speed, health: hp, maxHealth: hp,
-    width: 75, height: 75, animationFrame: 0, animationCounter: 0,
+    width: 75, height: 75,
+    animationFrame: 0, animationCounter: 0,
     hitCooldown: 0, hitCooldown2: 0,
     type: getEnemyTypeForRound(currentRound),
   });
@@ -876,7 +866,6 @@ function checkRoundComplete() {
       enemiesSpawnedThisRound >= totalEnemiesThisRound &&
       enemies.length === 0) {
     roundActive = false;
-    betweenRounds = false;
     if (spawnIntervalId) clearInterval(spawnIntervalId);
     showUpgradeScreen();
   }
@@ -983,10 +972,11 @@ let lastOrbAngle = 0;
 // ============================================================
 
 function getOrbPosition() {
-  if (player.dead) return {};
   let playerCenterX = player.x + player.width / 2;
   let playerCenterY = player.y + player.width / 2;
-  lastOrbAngle = Math.atan2(mouse.y - playerCenterY, mouse.x - playerCenterX);
+  if (!player.dead) {
+    lastOrbAngle = Math.atan2(mouse.y - playerCenterY, mouse.x - playerCenterX);
+  }
   return {
     x: playerCenterX + Math.cos(lastOrbAngle) * (orb.radius + player.width * 0.2),
     y: playerCenterY + Math.sin(lastOrbAngle) * (orb.radius + player.width * 0.2),
@@ -1004,8 +994,9 @@ function checkGameOver() {
   if ((player.health <= 0 || world.health <= 0) && !gameOver) {
     gameOver = true;
     player.dead = true;
+    beamActive = false;
+    mouse.down = false;
     if (spawnIntervalId) clearInterval(spawnIntervalId);
-    if (currentFlameSound) { currentFlameSound.pause(); currentFlameSound.currentTime = 0; }
   }
 }
 
@@ -1108,8 +1099,7 @@ function drawGame() {
   }
 
   // Draw orb
-let { x: orbX, y: orbY } = getOrbPosition();
-  if (orbX === undefined || orbY === undefined) { orbX = -999; orbY = -999; }
+  const { x: orbX, y: orbY } = getOrbPosition();
   if (orbFullSheet && orbFullSheet.complete && orbFullSheet.naturalHeight !== 0) {
     let numFrames = frameCounts.orbFull || 15;
     let orbFrameWidth  = orbFullSheet.width / numFrames;
@@ -1134,7 +1124,6 @@ let { x: orbX, y: orbY } = getOrbPosition();
     else if (enemy.type === "purple") fireSheet = purpleFireSheet;
     else if (enemy.type === "blue")   fireSheet = blueFireSheet;
     else if (enemy.type === "grey")   fireSheet = greyFireSheet;
-
     if (fireSheet && fireSheet.complete && enemy.health > 0) {
       gameCtx.drawImage(fireSheet, frame * 254, 0, 254, 254,
         enemy.x, enemy.y, enemy.width, enemy.height);
@@ -1142,64 +1131,63 @@ let { x: orbX, y: orbY } = getOrbPosition();
     }
   }
 
-  // Particles and hit effects (drawn before beam so beam renders on top)
+  // Particles and hit effects
   updateAndDrawParticles();
   updateAndDrawHitEffects();
 
-  // Draw beam
+  // Draw beam — fully gated, never runs when dead or game over
   if (beamActive && mouse.down && !player.dead && !gameOver) {
-    let { x: orbX, y: orbY } = getOrbPosition();
-    let dx = mouse.x - orbX;
-    let dy = mouse.y - orbY;
+    const { x: bOrbX, y: bOrbY } = getOrbPosition();
+    let dx = mouse.x - bOrbX;
+    let dy = mouse.y - bOrbY;
     let distance = Math.hypot(dx, dy);
-    let dirX = dx / Math.max(distance, 0.0001);
-    let dirY = dy / Math.max(distance, 0.0001);
-    let beamLength = Math.min(distance, maxBeamRange);
-    let endX = orbX + dirX * beamLength;
-    let endY = orbY + dirY * beamLength;
-    let beamThickness = 12;
+    if (distance > 0) {
+      let dirX = dx / distance;
+      let dirY = dy / distance;
+      let beamLength = Math.min(distance, maxBeamRange);
+      let endX = bOrbX + dirX * beamLength;
+      let endY = bOrbY + dirY * beamLength;
+      let beamThickness = 12;
 
-    for (let i = enemies.length - 1; i >= 0; i--) {
-      const enemy = enemies[i];
-      let enemyX = enemy.x + enemy.width / 2;
-      let enemyY = enemy.y + enemy.height / 2;
-
-      let dist = pointToSegmentDistance(enemyX, enemyY, orbX, orbY, endX, endY);
-      if (dist < beamThickness + 5 && enemy.hitCooldown <= 0) {
-        enemy.health -= player.streamDamage;
-        enemy.hitCooldown = 5;
-        spawnHitParticles(enemyX, enemyY, 4);
-        spawnHitEffect(enemyX, enemy.y, player.streamDamage);
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
+        let enemyX = enemy.x + enemy.width / 2;
+        let enemyY = enemy.y + enemy.height / 2;
+        let dist = pointToSegmentDistance(enemyX, enemyY, bOrbX, bOrbY, endX, endY);
+        if (dist < beamThickness + 5 && enemy.hitCooldown <= 0) {
+          enemy.health -= player.streamDamage;
+          enemy.hitCooldown = 5;
+          spawnHitParticles(enemyX, enemyY, 4);
+          spawnHitEffect(enemyX, enemy.y, player.streamDamage);
+        }
+        let endDist = Math.hypot(endX - enemyX, endY - enemyY);
+        if (endDist < 10 && enemy.hitCooldown2 <= 0) {
+          enemy.health -= player.hitDamage;
+          enemy.hitCooldown2 = 5;
+        }
+        if (enemy.health <= 0) {
+          spawnDeathParticles(enemyX, enemyY);
+          playSound(sounds.flameKill, 0.7);
+          enemies.splice(i, 1);
+          enemiesDefeated++;
+        }
       }
 
-      let endDist = Math.hypot(endX - enemyX, endY - enemyY);
-      if (endDist < 10 && enemy.hitCooldown2 <= 0) {
-        enemy.health -= player.hitDamage;
-        enemy.hitCooldown2 = 5;
-      }
+      gameCtx.drawImage(splashImg, endX - 75, endY - 75, 150, 150);
 
-      if (enemy.health <= 0) {
-        spawnDeathParticles(enemyX, enemyY);
-        playSound(sounds.flameKill, 0.7);
-        enemies.splice(i, 1);
-        enemiesDefeated++;
-      }
+      let angle = Math.atan2(endY - bOrbY, endX - bOrbX);
+      let length = Math.hypot(endX - bOrbX, endY - bOrbY);
+      gameCtx.save();
+      gameCtx.translate(bOrbX, bOrbY);
+      gameCtx.rotate(angle);
+      const grad = gameCtx.createLinearGradient(0, 0, length, 0);
+      grad.addColorStop(0, "#1117d6");
+      grad.addColorStop(1, "#128ad9");
+      gameCtx.fillStyle = grad;
+      gameCtx.fillRect(0, -4, length, 8);
+      gameCtx.fillRect(0, -1, length, 2);
+      gameCtx.restore();
     }
-
-    gameCtx.drawImage(splashImg, endX - 75, endY - 75, 150, 150);
-
-    let angle = Math.atan2(endY - orbY, endX - orbX);
-    let length = Math.hypot(endX - orbX, endY - orbY);
-    gameCtx.save();
-    gameCtx.translate(orbX, orbY);
-    gameCtx.rotate(angle);
-    const grad = gameCtx.createLinearGradient(0, 0, length, 0);
-    grad.addColorStop(0, "#1117d6");
-    grad.addColorStop(1, "#128ad9");
-    gameCtx.fillStyle = grad;
-    gameCtx.fillRect(0, -4, length, 8);
-    gameCtx.fillRect(0, -1, length, 2);
-    gameCtx.restore();
   }
 
   drawHealthBars();
@@ -1272,16 +1260,16 @@ function playerMovement() {
     if (keys["arrowleft"]  && !keys["arrowdown"]  && !keys["arrowup"])                           { player.x -= player.speed; player.direction = "left"; }
     if (keys["arrowdown"]  && !keys["arrowright"]  && !keys["arrowleft"] && !keys["arrowup"])    { player.y += player.speed; player.direction = "down"; }
     if (keys["arrowright"] && !keys["arrowup"]     && !keys["arrowdown"] && !keys["arrowleft"])  { player.x += player.speed; player.direction = "right"; }
-    if (keys["arrowup"]   && keys["arrowright"]) { player.x += (player.speed/3)*2.5; player.y -= (player.speed/3)*2.5; player.direction = "upRight"; }
-    if (keys["arrowleft"] && keys["arrowup"])    { player.x -= (player.speed/3)*2.5; player.y -= (player.speed/3)*2.5; player.direction = "upLeft"; }
-    if (keys["arrowdown"] && keys["arrowleft"])  { player.x -= (player.speed/3)*2.5; player.y += (player.speed/3)*2.5; player.direction = "downLeft"; }
-    if (keys["arrowright"]&& keys["arrowdown"])  { player.x += (player.speed/3)*2.5; player.y += (player.speed/3)*2.5; player.direction = "downRight"; }
-    if (keys["arrowleft"] && keys["arrowright"]) { player.direction = "idle"; }
-    if (keys["arrowup"]   && keys["arrowdown"])  { player.direction = "idle"; }
-    if (keys["arrowleft"] && keys["arrowright"] && keys["arrowup"])   { player.direction = "up"; }
-    if (keys["arrowleft"] && keys["arrowright"] && keys["arrowdown"]) { player.direction = "down"; }
-    if (keys["arrowup"]   && keys["arrowdown"]  && keys["arrowleft"]) { player.direction = "left"; }
-    if (keys["arrowup"]   && keys["arrowdown"]  && keys["arrowright"]){ player.direction = "right"; }
+    if (keys["arrowup"]    && keys["arrowright"]) { player.x += (player.speed/3)*2.5; player.y -= (player.speed/3)*2.5; player.direction = "upRight"; }
+    if (keys["arrowleft"]  && keys["arrowup"])    { player.x -= (player.speed/3)*2.5; player.y -= (player.speed/3)*2.5; player.direction = "upLeft"; }
+    if (keys["arrowdown"]  && keys["arrowleft"])  { player.x -= (player.speed/3)*2.5; player.y += (player.speed/3)*2.5; player.direction = "downLeft"; }
+    if (keys["arrowright"] && keys["arrowdown"])  { player.x += (player.speed/3)*2.5; player.y += (player.speed/3)*2.5; player.direction = "downRight"; }
+    if (keys["arrowleft"]  && keys["arrowright"]) { player.direction = "idle"; }
+    if (keys["arrowup"]    && keys["arrowdown"])  { player.direction = "idle"; }
+    if (keys["arrowleft"]  && keys["arrowright"] && keys["arrowup"])   { player.direction = "up"; }
+    if (keys["arrowleft"]  && keys["arrowright"] && keys["arrowdown"]) { player.direction = "down"; }
+    if (keys["arrowup"]    && keys["arrowdown"]  && keys["arrowleft"]) { player.direction = "left"; }
+    if (keys["arrowup"]    && keys["arrowdown"]  && keys["arrowright"]){ player.direction = "right"; }
   }
 
   if (!gameStarted) { requestAnimationFrame(playerMovement); return; }
@@ -1309,9 +1297,9 @@ function movementAnimation() {
 
 function spawnDrip() {
   if (!gameStarted) { requestAnimationFrame(spawnDrip); return; }
-  if (Math.random() < 1 / 250) {
-    let { x: orbX, y: orbY } = getOrbPosition();
-    if (orbX !== undefined) drips.push({ x: orbX, y: orbY, frame: 0, frameCounter: 0 });
+  if (Math.random() < 1 / 250 && !player.dead) {
+    const { x: orbX, y: orbY } = getOrbPosition();
+    drips.push({ x: orbX, y: orbY, frame: 0, frameCounter: 0 });
   }
   requestAnimationFrame(spawnDrip);
 }
@@ -1344,8 +1332,8 @@ function col(entity, colType) {
       for (let i = 0; i < enemies.length; i++) {
         const enemy = enemies[i];
         let px = player.x + player.width * 0.2, py = player.y + player.height * 0.2;
-        let pw = player.width * 0.6,             ph = player.height * 0.8;
-        let hitting = px < enemy.x + enemy.width && px + pw > enemy.x &&
+        let pw = player.width * 0.6, ph = player.height * 0.8;
+        let hitting = px < enemy.x + enemy.width  && px + pw > enemy.x &&
                       py < enemy.y + enemy.height && py + ph > enemy.y;
         if (hitting && player.hitCooldown <= 0) {
           player.health -= 1;
