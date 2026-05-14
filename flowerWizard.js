@@ -1108,7 +1108,8 @@ function drawGame() {
   }
 
   // Draw orb
-  let { x: orbX, y: orbY } = getOrbPosition();
+let { x: orbX, y: orbY } = getOrbPosition();
+  if (orbX === undefined || orbY === undefined) { orbX = -999; orbY = -999; }
   if (orbFullSheet && orbFullSheet.complete && orbFullSheet.naturalHeight !== 0) {
     let numFrames = frameCounts.orbFull || 15;
     let orbFrameWidth  = orbFullSheet.width / numFrames;
@@ -1146,7 +1147,7 @@ function drawGame() {
   updateAndDrawHitEffects();
 
   // Draw beam
-  if (beamActive && mouse.down) {
+  if (beamActive && mouse.down && !player.dead && !gameOver) {
     let { x: orbX, y: orbY } = getOrbPosition();
     let dx = mouse.x - orbX;
     let dy = mouse.y - orbY;
